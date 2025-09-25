@@ -16,9 +16,6 @@ export default async function HomePage() {
 
   return (
     <div className="container mx-auto px-4">
-      <h1>Hello Next.js 👋</h1>
-      
-      <h2 className="mt-6">含圖片的最新貼文</h2>
       <TweetList tweets={tweets ?? []} />
 
       <p className="mt-6">

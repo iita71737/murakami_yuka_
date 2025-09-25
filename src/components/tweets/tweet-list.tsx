@@ -36,12 +36,16 @@ function TweetCard({ tweet }: TweetCardProps) {
 
       <div className="flex gap-3 flex-wrap mb-3">
         {tweet.photos.map((photo) => (
-          <div key={photo.url} className="relative w-32 h-24 overflow-hidden rounded-lg">
+          <div
+            key={photo.url}
+            className="relative w-32 aspect-[4/3] overflow-hidden rounded-lg"
+          >
             <Image
               src={photo.url}
               alt={photo.alt ?? "tweet image"}
-              fill
-              className="object-cover rounded-lg hover:scale-105 transition-transform duration-300"
+              width={128}   // 8rem
+              height={96}   // 6rem
+              className="rounded-lg object-cover hover:scale-105 transition-transform duration-300"
             />
           </div>
         ))}
@@ -49,8 +53,8 @@ function TweetCard({ tweet }: TweetCardProps) {
 
       <div className="text-right">
         <small className="text-slate-400 text-sm font-light">
-          {tweet.created_at ? new Date(tweet.created_at).toLocaleDateString("ja-JP", { 
-            year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" 
+          {tweet.created_at ? new Date(tweet.created_at).toLocaleDateString("ja-JP", {
+            year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
           }) : ""}
         </small>
       </div>
