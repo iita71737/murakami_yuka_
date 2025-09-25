@@ -16,10 +16,12 @@ import {
 import Image from "next/image"
 
 const NAV_ITEMS = [
-  { href: "/", label: "Home" },
-  { href: "/news", label: "News" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/", label: "News" },
+  { href: "/schedule", label: "Schedule" },
+  { href: "/goods", label: "Goods" },
+  { href: "/blog", label: "Blog" },
+  { href: "/live", label: "Live" },
+  { href: "/profile", label: "Profile" },
 ]
 
 // 尺寸規格：統一控制
@@ -89,7 +91,7 @@ export default function Header() {
               className="text-xl font-bold tracking-tight text-gray-900 dark:text-white"
               aria-label="Go to homepage"
             >
-              Brand
+              Murakami Yuka
             </Link>
 
             <nav className="hidden lg:flex items-center gap-1">
@@ -156,11 +158,11 @@ export default function Header() {
                 aria-expanded={userOpen}
               >
                 <Image
-                  src="https://via.placeholder.com/80"
+                  src="https://avatar.iran.liara.run/public"
                   alt="avatar"
                   width={32}
                   height={32}
-                  className="rounded-full"
+                  className="rounded-full object-cover"
                 />
                 <ChevronDownIcon className="h-4 w-4 opacity-70" />
               </button>
