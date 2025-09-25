@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono, Noto_Sans_JP } from "next/font/google"
 import Header from "../components/Header"
 import { Providers } from "./providers"
+import Footer from "@/components/Footer"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,13 +41,7 @@ export default function RootLayout({
           <main className="container mx-auto px-4 py-8">
             {children}
           </main>
-          <footer className="border-t border-gray-200 dark:border-gray-700">
-            <div className="max-w-screen-xl mx-auto p-4">
-              <span className="text-gray-500 dark:text-gray-400">
-                I&apos;m here to stay (Footer)
-              </span>
-            </div>
-          </footer>
+          <Footer />
         </Providers>
       </body>
     </html>
