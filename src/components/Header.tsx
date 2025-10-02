@@ -143,10 +143,10 @@ export default function Header() {
 
             {/* 主要 CTA（例：Sign up） */}
             <Link
-              href="/signup"
+              href="http://localhost:1337/api/connect/google"
               className="hidden sm:inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium px-3 py-2 hover:bg-blue-700 transition-colors"
             >
-              Get Started
+              Login
             </Link>
 
             {/* 個人選單（桌機） */}
@@ -247,11 +247,11 @@ export default function Header() {
 
               {/* CTA（手機） */}
               <Link
-                href="/signup"
+                href="http://localhost:1337/api/connect/google"
                 onClick={() => setMobileOpen(false)}
                 className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-base px-3 py-2 hover:bg-blue-700 transition-colors"
               >
-                Get Started
+                Login
               </Link>
             </nav>
           </div>
