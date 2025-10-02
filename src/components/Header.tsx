@@ -15,6 +15,8 @@ import {
 } from "@heroicons/react/24/outline"
 import Image from "next/image"
 
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? "http://localhost:1337"
+
 const NAV_ITEMS = [
   { href: "/", label: "News" },
   { href: "/schedule", label: "Schedule" },
@@ -26,17 +28,22 @@ const NAV_ITEMS = [
 
 // 尺寸規格：統一控制
 const ICON = "h-5 w-5 shrink-0"
-const ICON_BTN = "h-10 w-10 p-2" // 40px icon button
+const ICON_BTN = "h-10 w-10 p-2"
 const LINK = "rounded-md px-3 py-2 text-sm leading-none font-medium transition-colors"
 
 export default function Header() {
   const pathname = usePathname()
   const { resolvedTheme, setTheme } = useTheme()
 
-  const [mounted, setMounted] = useState(false) // 修復主題 icon SSR/CSR 差異
+  const [mounted, setMounted] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // 新增：登入狀態
+  const [authLoading, setAuthLoading] = useState(true)
+  const [isAuthed, setIsAuthed] = useState(false)
+  const [userName, setUserName] = useState<string | null>(null)
 
   useEffect(() => setMounted(true), [])
   useEffect(() => {
@@ -59,6 +66,35 @@ export default function Header() {
     }
   }, [])
 
+  // 讀 localStorage 的 JWT 並驗證
+  useEffect(() => {
+    const verify = async () => {
+      try {
+        const jwt = typeof window !== "undefined" ? localStorage.getItem("strapi_jwt") : null
+        if (!jwt) {
+          setIsAuthed(false)
+          setUserName(null)
+          return
+        }
+        const res = await fetch(`${STRAPI_URL}/api/users/me`, {
+          headers: { Authorization: `Bearer ${jwt}` },
+        })
+        if (!res.ok) throw new Error(String(res.status))
+        const me = await res.json()
+        setIsAuthed(true)
+        setUserName(me?.username ?? me?.email ?? "User")
+      } catch {
+        // 失效就清掉
+        localStorage.removeItem("strapi_jwt")
+        setIsAuthed(false)
+        setUserName(null)
+      } finally {
+        setAuthLoading(false)
+      }
+    }
+    verify()
+  }, [])
+
   const NavLink = ({ href, label }: { href: string; label: string }) => {
     const active = pathname === href
     return (
@@ -77,8 +113,15 @@ export default function Header() {
     )
   }
 
-  const toggleTheme = () =>
-    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+  const toggleTheme = () => setTheme(resolvedTheme === "dark" ? "light" : "dark")
+
+  // 登出：清 token 與狀態
+  const logout = () => {
+    localStorage.removeItem("strapi_jwt")
+    setIsAuthed(false)
+    setUserName(null)
+    setUserOpen(false)
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur">
@@ -113,7 +156,7 @@ export default function Header() {
             </div>
           </div>
 
-          {/* 右：通知、主題、CTA、個人選單、漢堡 */}
+          {/* 右：通知、主題、CTA / 使用者選單、漢堡 */}
           <div className="flex items-center gap-2">
             {/* 通知 */}
             <button
@@ -126,7 +169,7 @@ export default function Header() {
               </span>
             </button>
 
-            {/* 主題切換（避免 hydration：未 mounted 時顯示 placeholder） */}
+            {/* 主題切換 */}
             <button
               onClick={toggleTheme}
               className={`inline-flex items-center justify-center rounded-md text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring focus-visible:ring-blue-500/50 ${ICON_BTN}`}
@@ -141,63 +184,79 @@ export default function Header() {
               )}
             </button>
 
-            {/* 主要 CTA（例：Sign up） */}
-            <Link
-              href="http://localhost:1337/api/connect/google"
-              className="hidden sm:inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium px-3 py-2 hover:bg-blue-700 transition-colors"
-            >
-              Login
-            </Link>
-
-            {/* 個人選單（桌機） */}
-            <div className="relative hidden lg:block" ref={userMenuRef}>
-              <button
-                onClick={() => setUserOpen((v) => !v)}
-                className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring focus-visible:ring-blue-500/50"
-                aria-haspopup="menu"
-                aria-expanded={userOpen}
-              >
-                <Image
-                  src="https://avatar.iran.liara.run/public"
-                  alt="avatar"
-                  width={32}
-                  height={32}
-                  className="rounded-full object-cover"
-                />
-                <ChevronDownIcon className="h-4 w-4 opacity-70" />
-              </button>
-              {userOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 mt-2 w-56 overflow-hidden rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg"
+            {/* === 未登入：顯示 Login === */}
+            {!authLoading && !isAuthed && (
+              <>
+                <Link
+                  href={`${STRAPI_URL}/api/connect/google`}
+                  className="hidden sm:inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium px-3 py-2 hover:bg-blue-700 transition-colors"
                 >
-                  <Link
-                    href="/profile"
-                    role="menuitem"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    onClick={() => setUserOpen(false)}
+                  Login
+                </Link>
+                {/* 手機版 CTA */}
+                <Link
+                  href={`${STRAPI_URL}/api/connect/google`}
+                  onClick={() => setMobileOpen(false)}
+                  className="lg:hidden inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-sm font-medium px-3 py-2 hover:bg-blue-700 transition-colors"
+                >
+                  Login
+                </Link>
+              </>
+            )}
+
+            {/* === 已登入：顯示使用者選單 + Log out === */}
+            {!authLoading && isAuthed && (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setUserOpen((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring focus-visible:ring-blue-500/50"
+                  aria-haspopup="menu"
+                  aria-expanded={userOpen}
+                >
+                  <Image
+                    src="https://avatar.iran.liara.run/public"
+                    alt="avatar"
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
+                  />
+                  <span className="hidden sm:inline text-sm">{userName ?? "User"}</span>
+                  <ChevronDownIcon className="h-4 w-4 opacity-70" />
+                </button>
+
+                {userOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-56 overflow-hidden rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg"
                   >
-                    Profile
-                  </Link>
-                  <Link
-                    href="/settings"
-                    role="menuitem"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    onClick={() => setUserOpen(false)}
-                  >
-                    Settings
-                  </Link>
-                  <div className="my-1 border-t border-gray-200 dark:border-gray-800" />
-                  <button
-                    role="menuitem"
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    onClick={() => setUserOpen(false)}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
+                    <Link
+                      href="/profile"
+                      role="menuitem"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => setUserOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/settings"
+                      role="menuitem"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => setUserOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                    <div className="my-1 border-t border-gray-200 dark:border-gray-800" />
+                    <button
+                      role="menuitem"
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={logout}
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 漢堡（手機/平板） */}
             <button
@@ -213,7 +272,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 手機選單 */}
+      {/* 手機選單（導覽） */}
       {mobileOpen && (
         <div id="mobile-menu" className="lg:hidden border-t border-gray-200 dark:border-gray-800">
           <div className="mx-auto max-w-7xl px-4 py-3 space-y-3">
@@ -244,15 +303,6 @@ export default function Header() {
                   {n.label}
                 </Link>
               ))}
-
-              {/* CTA（手機） */}
-              <Link
-                href="http://localhost:1337/api/connect/google"
-                onClick={() => setMobileOpen(false)}
-                className="mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 text-white text-base px-3 py-2 hover:bg-blue-700 transition-colors"
-              >
-                Login
-              </Link>
             </nav>
           </div>
         </div>
